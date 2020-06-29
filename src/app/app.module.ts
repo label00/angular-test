@@ -1,54 +1,12 @@
-import {
-  Component,
-  NgModule,
-  Input,
-  OnInit,
-  OnChanges,
-  Output,
-  EventEmitter
-} from "@angular/core";
-import { BrowserModule } from "@angular/platform-browser";
-import { ApiService } from "./ApiService";
+import {Component, NgModule, OnInit} from '@angular/core';
+import {BrowserModule} from '@angular/platform-browser';
+import {ApiService} from './ApiService';
+import {RowComponent} from './row/row.component';
+import {HeaderComponent} from './header/header.component';
+import {FormControl, ReactiveFormsModule} from '@angular/forms';
 
 @Component({
-  // tslint:disable-next-line
-  selector: "[header]",
-  template: `
-    <th>№</th>
-    <th>Name</th>
-    <th>Score</th>
-    <th>Note</th>
-  `
-})
-export class HeaderComponent {}
-
-@Component({
-  // tslint:disable-next-line
-  selector: "[item-detail]",
-  template: `
-    <td>{{ item.id }}</td>
-    <td>{{ item.name }}</td>
-    <td>{{ item.score }}</td>
-    <td>
-      <input
-        size="7"
-        (change)="changeNote.emit({ id: item.id, value: $event.target.value })"
-        value="{{ item.note }}"
-      />
-    </td>
-  `
-})
-export class RowComponent implements OnChanges {
-  @Input() item;
-  @Output() changeNote = new EventEmitter();
-
-  ngOnChanges() {
-    console.log("inputs changes");
-  }
-}
-
-@Component({
-  selector: "app-component",
+  selector: 'app-component',
   providers: [ApiService],
   template: `
     <table border="2" cellpadding="5">
@@ -57,9 +15,8 @@ export class RowComponent implements OnChanges {
       </thead>
       <tbody>
         <tr
-          *ngFor="let item of items"
+          *ngFor="let item of items; trackBy: trackByFn"
           item-detail
-          (changeNote)="fn($event)"
           [item]="item"
         ></tr>
       </tbody>
@@ -67,12 +24,13 @@ export class RowComponent implements OnChanges {
   `
 })
 export class AppComponent implements OnInit {
-  items: {
+  public items: {
     id: number;
     name: string;
     score: number;
-    note?: string;
+    control?: FormControl;
   }[] = [];
+  public controls: Map<number, FormControl> = new Map();
   constructor(private apiService: ApiService) {}
 
   ngOnInit() {
@@ -81,20 +39,21 @@ export class AppComponent implements OnInit {
     });
   }
 
-  fn(e) {
-    console.log(e);
-  }
-
   calcScore(items) {
     return items.map(item => ({
       ...item,
-      score: Math.round((item.rate / 100) * 5)
+      score: Math.round((item.rate / 100) * 5),
+      control: this.controls.has(item.id) ? this.controls.get(item.id) : this.controls.set(item.id, new FormControl()).get(item.id),
     }));
+  }
+
+  trackByFn(idx, item) {
+    return item.id;
   }
 }
 
 @NgModule({
-  imports: [BrowserModule],
+  imports: [BrowserModule, ReactiveFormsModule],
   declarations: [AppComponent, RowComponent, HeaderComponent],
   bootstrap: [AppComponent]
 })
